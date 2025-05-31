@@ -1,0 +1,18 @@
+[package]
+name = "tundra"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "tundra"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tundra"
+path = "src/main.rs"
+[dependencies]
+cranelift-codegen    = "0.120.0"
+cranelift-frontend   = "0.120.0"
+cranelift-module     = "0.120.0"
+cranelift-jit        = "0.120.0"  # ← switch to this
+lazy_static          = "1.4"
