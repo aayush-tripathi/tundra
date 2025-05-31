@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "tundra",
+  "tundra-cli",
+]
+resolver = "2"

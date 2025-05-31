@@ -1,0 +1,39 @@
+#Define a function fizzbuzz(n):
+# Demo: functions, arrays, loops, conditionals, and comments with `#`
+
+# Create and initialize an array of 4 integers
+var arr = [5, 3, 8, 1]
+var n = 4
+var i =0
+# Function to compute the sum of an array
+fun sum(arr, length):
+    var total = 0
+    var i = 0
+    while (i < length):
+        total = total + arr[i]
+        i = i + 1
+    return total
+
+# Function to find the maximum element in an array
+fun max_element(arr, length):
+    var m = arr[0]
+    var i = 1
+    while (i < length):
+        if (arr[i] > m):
+            m = arr[i]
+        i = i + 1
+    return m
+
+fun reverse(arr, length):
+    var i = 0
+    while (i < length / 2):
+        var tmp = arr[i]
+        arr[i] = arr[length-1-i]
+        arr[length-1-i] = tmp
+        i = i + 1
+reverse(arr, n)
+print("Reversed array:")
+i = 0
+while (i < n):
+    print(arr[i])
+    i = i + 1

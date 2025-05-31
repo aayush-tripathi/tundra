@@ -1,0 +1,8 @@
+print("What is your name?")
+var name = input()
+print("Hello, " + name + "!")
+
+print("Enter a number:")
+var n_str = input()
+var n =parseInt(n_str)
+print("Twice that is: " + (n * 2))
