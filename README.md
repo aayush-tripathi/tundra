@@ -43,7 +43,7 @@ To build and run your first Tundra program:
 3. Run your program:
 
    ```bash
-   ./target/release/tundra-cli path/to/your_program.tnd
+   ./target/release/tundra-cli path/to/your_program.tundra
    ```
 
 ## Roadmap
