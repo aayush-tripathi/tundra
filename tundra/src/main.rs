@@ -17,16 +17,15 @@ lazy_static! {
 
 fn read_source() -> String {
     let demo = r#"
-# Factorial Function in Tundra
-fun fact(n):
-    var ans = 1
-    for i in range(1,n+1):
-        ans = ans * i
-    return ans
+var n = 1000 
+var a = 0 
+var b = 1
+for i in range(n):
+    var temp = a
+    a = (a+b)%(10**9+7)
+    b = temp 
+print(a)
 
-var n = input()
-var x = parseInt(n)
-print(fact(x))
 
 "#;
     demo.to_string()

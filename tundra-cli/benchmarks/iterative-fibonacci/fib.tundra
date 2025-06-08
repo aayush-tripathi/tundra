@@ -1,8 +1,8 @@
-var n = 80 
+var n = 1000000
 var a = 0 
 var b = 1
 for i in range(n):
     var temp = a
-    a = a+b
+    a = (a+b)%(10**9+7)
     b = temp 
 print(a)

@@ -1,5 +1,7 @@
-n = 80
+n = 4000000
 a, b = 0, 1
 for _ in range(n):
-    a, b = b, a + b
+    temp=a
+    a=(a+b)%(10**9+7)
+    b=temp
 print(a)
