@@ -14,5 +14,5 @@ path = "src/main.rs"
 cranelift-codegen    = "0.120.0"
 cranelift-frontend   = "0.120.0"
 cranelift-module     = "0.120.0"
-cranelift-jit        = "0.120.0"  # ← switch to this
+cranelift-jit        = "0.120.0"  
 lazy_static          = "1.4"

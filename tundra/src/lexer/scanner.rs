@@ -1,4 +1,4 @@
-// src/lexer/scanner.rs
+// lexer/scanner.rs
 
 use super::token::{Token, TokenType};
 use super::helper::TrieNode;
@@ -24,14 +24,14 @@ impl Scanner {
         }
     }
 
-    /// Scan all tokens, emitting INDENT/DEDENT at line-beginnings.
+    
     pub fn scan_tokens(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
         let mut indents = vec![0];
         let mut at_line_start = true;
 
         while !self.is_at_end() {
-            // 1) If we're at the start of a line, handle leading spaces/tabs → INDENT/DEDENT
+            
              if at_line_start && self.peek() == '\n' {
                 self.advance();
                 let tok = Token::new(
@@ -41,7 +41,7 @@ impl Scanner {
                     { self.current_line += 1; self.current_line - 1 },
                 );
                 tokens.push(tok);
-                // stay in “at_line_start” so next line re‐runs indent logic
+                
                 at_line_start = true;
                 continue;
             }
@@ -79,46 +79,35 @@ impl Scanner {
                 }
             }
 
-            // 2) Scan the next raw token
+            
             if let Some(tok) = self.scan_token() {
                 at_line_start = tok.token == TokenType::Newline;
                 tokens.push(tok);
             }
         }
-
-        // 3) After EOF, unwind any remaining indents
+        if !matches!(tokens.last().map(|t| t.token), Some(TokenType::Newline)) {
+            tokens.push(Token::new(TokenType::Newline,"\n".into(),self.current_line,self.current_line,));
+        }
         while indents.len() > 1 {
             indents.pop();
             tokens.push(Token::new(TokenType::Dedent, String::new(), self.current_line, self.current_line));
         }
-
-        // 4) Finally, the EOF token
         tokens.push(Token::new(TokenType::EOF, String::new(), self.current_line, self.current_line));
         tokens
-    }
 
-    /// Scan one “raw” token, skipping spaces and comments,
-    /// handling newlines and rejecting stray tabs.
+}
+
+    
+    
     pub fn scan_token(&mut self) -> Option<Token> {
         loop {
             if self.is_at_end() {
                 return None;
             }
             match self.peek() {
-                ' ' | '\r' => { self.advance(); }
-                '\t' => {
-                    // reject stray tabs outside indentation
-                    let err = Token::new(
-                        TokenType::Error,
-                        "Tab character not allowed".into(),
-                        self.current_line,
-                        self.current_line,
-                    );
-                    self.advance();
-                    return Some(err);
-                }
+                ' ' | '\r' | '\t' => { self.advance(); }
                 '#' => {
-                    // consume comment to end-of-line
+                    
                     while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
@@ -137,7 +126,7 @@ impl Scanner {
             }
         }
 
-        // record lexeme start
+        
         self.start = self.current;
         self.start_line = self.current_line;
 
@@ -175,7 +164,7 @@ impl Scanner {
     }
     '*' => {
         if self.match_char('*') {
-            // could be '**' or '**='
+            
             if self.match_char('=') {
                 TokenType::StarStarEqual
             } else {
@@ -189,7 +178,7 @@ impl Scanner {
     }
     '/' => {
         if self.match_char('/') {
-            // '//' or '//='
+            
             if self.match_char('=') {
                 TokenType::SlashSlashEqual
             } else {
@@ -247,7 +236,7 @@ impl Scanner {
     fn string(&mut self) -> Token {
         while !self.is_at_end() && self.peek() != '"' {
             if self.peek() == '\\' {
-                // support basic escape sequences
+                
                 self.advance();
                 if !self.is_at_end() {
                     if self.peek() == '\n' {
@@ -265,7 +254,7 @@ impl Scanner {
         if self.is_at_end() {
             return Token::new(TokenType::Error, "Unterminated string".into(), self.start_line, self.current_line);
         }
-        self.advance(); // closing quote
+        self.advance(); 
         self.add_token(TokenType::String)
     }
 

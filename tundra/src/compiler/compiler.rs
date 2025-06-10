@@ -19,7 +19,7 @@ pub struct LoopContext {
 
 pub struct Compiler {
     compiling_chunk:    Rc<RefCell<Chunk>>,
-    parser:             Parser,
+    pub parser:             Parser,
     scope_depth:        usize,
     locals:             Vec<Local>,
     register_allocator: RegisterAllocator,
