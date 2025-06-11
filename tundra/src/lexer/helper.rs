@@ -1,6 +1,6 @@
-// src/lexer/helper.rs 
-use std::collections::HashMap;
+// src/lexer/helper.rs
 use super::token::TokenType;
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct TrieNode {
