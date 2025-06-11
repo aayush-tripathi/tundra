@@ -1,5 +1,6 @@
 name: Build & Publish tundra-cli
-
+permissions:
+  contents: write
 on:
   release:
     types: [created, published, prereleased]
@@ -36,9 +37,7 @@ jobs:
           fi
 
       - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/upload-release-asset@v2
         with:
           upload_url:     ${{ github.event.release.upload_url }}
           asset_path:     target/release/${{ steps.package.outputs.asset }}
