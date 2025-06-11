@@ -1,21 +1,11 @@
-use std::{
-    env,
-    fs,
-    path::Path,
-    process,
-    rc::Rc,
-    cell::RefCell,
-};
+use std::{cell::RefCell, env, fs, path::Path, process, rc::Rc};
 
 use tundra::{
-    compiler::compiler::Compiler,
     bytecode::chunk::Chunk,
-    vm::{
-        interpretresult::InterpretResult,
-        vm::VM,
-    },
-    lexer::scanner::Scanner,
     bytecode::debug::disassemble_chunk,
+    compiler::compiler::Compiler,
+    lexer::scanner::Scanner,
+    vm::{interpretresult::InterpretResult, vm::VM},
 };
 
 fn print_usage_and_exit() -> ! {
@@ -28,7 +18,7 @@ fn main() {
     let _ = args.next(); // program name
     let script = match args.next() {
         Some(s) => s,
-        None    => print_usage_and_exit(),
+        None => print_usage_and_exit(),
     };
 
     let path = Path::new(&script);
@@ -62,7 +52,7 @@ fn main() {
     // 2) Run with **interpreter only** (no JIT)
     let mut vm = VM::new_interpreter_only(chunk);
     match vm.run() {
-        InterpretResult::Ok           => {}
+        InterpretResult::Ok => {}
         InterpretResult::CompileError => {
             eprintln!("Compile error");
             process::exit(1);

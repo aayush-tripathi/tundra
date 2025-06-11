@@ -1,22 +1,18 @@
-
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 use tundra::{
-    bytecode::chunk::Chunk,
-    compiler::compiler::Compiler,
+    bytecode::chunk::Chunk, compiler::compiler::Compiler, compiler::parser::Parser,
     lexer::scanner::Scanner,
-    compiler::parser::Parser,
 };
 
 fn compile_src(src: &str) -> bool {
-    
     let tokens = Scanner::new(src.to_string()).scan_tokens();
-    
+
     let mut chunk = Rc::new(RefCell::new(Chunk::new()));
     let mut comp = Compiler::new(chunk.clone());
     comp.parser.tokens = tokens;
     comp.parser.current_idx = 0;
     comp.parser.advance_token();
-    
+
     let ok = comp.compile(src);
     ok
 }
@@ -75,7 +71,7 @@ fn blank_lines_and_trailing_print() {
     let src = r#"
 print(7)
 
-"#; 
+"#;
     assert!(
         compile_src(src),
         "print() with subsequent blank lines should compile"
@@ -87,7 +83,7 @@ fn print_in_function_body_at_eof() {
     let src = r#"
 fun foo():
     print(5)
-"#;  
+"#;
     assert!(
         compile_src(src),
         "print() as last line inside an indented block at EOF should compile"

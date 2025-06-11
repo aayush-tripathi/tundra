@@ -1,18 +1,18 @@
-// src/main.rs 
-use std::{env, fs, rc::Rc, cell::RefCell};
-#[macro_use] extern crate lazy_static;
+// src/main.rs
+use std::{cell::RefCell, env, fs, rc::Rc};
+#[macro_use]
+extern crate lazy_static;
 
 use tundra::{
-    bytecode::{
-        chunk::Chunk,
-        debug::disassemble_chunk,
-    }, compiler::compiler::Compiler, jit::JitContext, lexer::scanner::Scanner, vm::{interpretresult::InterpretResult, vm::VM}
+    bytecode::{chunk::Chunk, debug::disassemble_chunk},
+    compiler::compiler::Compiler,
+    jit::JitContext,
+    lexer::scanner::Scanner,
+    vm::{interpretresult::InterpretResult, vm::VM},
 };
 
 lazy_static! {
-
-    static ref JIT_CTX: std::sync::Mutex<JitContext> =
-        std::sync::Mutex::new(JitContext::new());
+    static ref JIT_CTX: std::sync::Mutex<JitContext> = std::sync::Mutex::new(JitContext::new());
 }
 
 fn read_source() -> String {
@@ -49,8 +49,8 @@ fn main() {
     let mut vm = VM::new_interpreter_only(chunk);
 
     match vm.run() {
-        InterpretResult::Ok            => {}
-        InterpretResult::RuntimeError  => eprintln!("💥  runtime error"),
-        InterpretResult::CompileError  => unreachable!("we already compiled"),
+        InterpretResult::Ok => {}
+        InterpretResult::RuntimeError => eprintln!("💥  runtime error"),
+        InterpretResult::CompileError => unreachable!("we already compiled"),
     }
 }

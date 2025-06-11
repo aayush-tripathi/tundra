@@ -1,30 +1,34 @@
 //src/vm/vm.rs
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
-use crate::{
-    bytecode::{self, chunk::Chunk, opcode::OpCode, value::{ FunctionObject, Value, ValueType}},
-    compiler::compiler::Compiler, jit::{JittedFn, GLOBAL_NAMES},
-};
 use super::interpretresult::InterpretResult;
-use std::io::{self, Write};
+use crate::{
+    bytecode::{
+        self,
+        chunk::Chunk,
+        opcode::OpCode,
+        value::{FunctionObject, Value, ValueType},
+    },
+    compiler::compiler::Compiler,
+    jit::{JittedFn, GLOBAL_NAMES},
+};
 use lazy_static::lazy_static;
+use std::io::{self, Write};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use std::sync::Mutex;
 use crate::jit::JitContext;
+use std::sync::Mutex;
 
 lazy_static! {
     pub static ref JIT_CTX: Mutex<JitContext> = Mutex::new(JitContext::new());
 }
 
-
 /// Reads one line from stdin, trims newline, returns it as a Tundra string.
 fn input_native(_args: &[Value]) -> Value {
-
     io::stdout().flush().unwrap();
 
     let mut buf = String::new();
     io::stdin()
-      .read_line(&mut buf)
-      .expect("Failed to read line from stdin");
+        .read_line(&mut buf)
+        .expect("Failed to read line from stdin");
     let s = buf.trim_end().to_string();
     Value::string(s)
 }
@@ -50,8 +54,10 @@ fn parse_float_native(args: &[Value]) -> Value {
         ValueType::String(s) => s,
         _ => panic!("parseFloat expects a string"),
     };
-    let f = s.trim().parse::<f64>()
-               .expect(&format!("Invalid float: `{}`", s));
+    let f = s
+        .trim()
+        .parse::<f64>()
+        .expect(&format!("Invalid float: `{}`", s));
     Value::float(f)
 }
 fn len_native(args: &[Value]) -> Value {
@@ -66,7 +72,6 @@ fn len_native(args: &[Value]) -> Value {
 }
 /// Native implementation of `Array(len)`.
 fn array_native(args: &[Value]) -> Value {
-
     if args.len() != 1 {
         panic!("Array() expects exactly one argument");
     }
@@ -84,18 +89,18 @@ fn array_native(args: &[Value]) -> Value {
 }
 
 /// A call‐frame saved on CALL, popped on RETURN.
- struct CallFrame {
-    return_pc:   usize,             
-    return_reg:  usize,              
-    chunk:       Rc<RefCell<Chunk>>,   
-    base:        usize,               
+struct CallFrame {
+    return_pc: usize,
+    return_reg: usize,
+    chunk: Rc<RefCell<Chunk>>,
+    base: usize,
 }
 pub struct VM {
     pub registers: [Value; 1024],
-    pub chunk:     Rc<RefCell<Chunk>>,
-    pub pc:        usize,
+    pub chunk: Rc<RefCell<Chunk>>,
+    pub pc: usize,
     pub globals: HashMap<&'static str, Value>,
-    pub frames:        Vec<CallFrame>, 
+    pub frames: Vec<CallFrame>,
     pub jit_enabled: bool,
 }
 
@@ -107,32 +112,36 @@ impl VM {
             pc: 0,
             globals: HashMap::new(),
             frames: Vec::new(),
-            jit_enabled:true,
+            jit_enabled: true,
         };
         vm.globals.insert("input", Value::native(input_native, 0));
-        vm.globals.insert("parseInt", Value::native(parse_int_native, 1));
-        vm.globals.insert("parseFloat", Value::native(parse_float_native, 1));
-        vm.globals.insert("Array",    Value::native(array_native,   1));
+        vm.globals
+            .insert("parseInt", Value::native(parse_int_native, 1));
+        vm.globals
+            .insert("parseFloat", Value::native(parse_float_native, 1));
+        vm.globals.insert("Array", Value::native(array_native, 1));
 
-        vm.globals.insert("len",   Value::native(len_native,   1));
-        vm  
+        vm.globals.insert("len", Value::native(len_native, 1));
+        vm
     }
-    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>) -> VM  {
+    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>) -> VM {
         let mut vm = VM {
             registers: core::array::from_fn(|_| Value::none()),
             chunk,
             pc: 0,
             globals: HashMap::new(),
             frames: Vec::new(),
-            jit_enabled:false,
+            jit_enabled: false,
         };
 
         vm.globals.insert("input", Value::native(input_native, 0));
-        vm.globals.insert("parseInt", Value::native(parse_int_native, 1));
-        vm.globals.insert("parseFloat", Value::native(parse_float_native, 1));
-        vm.globals.insert("Array",    Value::native(array_native,   1));
+        vm.globals
+            .insert("parseInt", Value::native(parse_int_native, 1));
+        vm.globals
+            .insert("parseFloat", Value::native(parse_float_native, 1));
+        vm.globals.insert("Array", Value::native(array_native, 1));
 
-        vm.globals.insert("len",   Value::native(len_native,   1));
+        vm.globals.insert("len", Value::native(len_native, 1));
         vm.jit_enabled = false;
         vm
     }
@@ -152,37 +161,38 @@ impl VM {
         self.registers = core::array::from_fn(|_| Value::none());
         self.frames.clear();
     }
-     
-
 
     pub fn add(&self, a: &Value, b: &Value) -> Value {
         use bytecode::value::ValueType::*;
         match (&a.value, &b.value) {
-            (Int(x),    Int(y))    => Value::int(x + y),
-            (Float(x),  Float(y))  => Value::float(x + y),
+            (Int(x), Int(y)) => Value::int(x + y),
+            (Float(x), Float(y)) => Value::float(x + y),
             (String(x), String(y)) => Value::string(x.clone() + y),
-            (String(x), Int(y))    => Value::string(x.clone() + &y.to_string()),
-            (String(x), Float(y))  => Value::string(x.clone() + &y.to_string()),
-            (String(x), Char(y))   => Value::string(x.clone() + &y.to_string()),
-            (Int(x),    String(y)) => Value::string(x.to_string() + y),
-            (Int(x),    Float(y))  => Value::float((*x as f64) + y),
-            (Float(x),  String(y)) => Value::string(x.to_string() + y),
-            (Float(x),  Int(y))    => Value::float(x + (*y as f64)),
-            (Char(x),   String(y)) => Value::string(x.to_string() + y),
-            (Char(x),   Char(y))   => Value::string(x.to_string() + &y.to_string()),
-            (Bool(x),   Bool(y))   => Value::int((*x as i64) + (*y as i64)),
-            (Bool(x),   Int(y))    => Value::int((*x as i64) + y),
-            (Int(x),    Bool(y))   => Value::int(x + (*y as i64)),
-            (Bool(x),   Float(y))  => Value::float((*x as i64) as f64 + y),
-            (Float(x),  Bool(y))   => Value::float(x + (*y as i64) as f64),
+            (String(x), Int(y)) => Value::string(x.clone() + &y.to_string()),
+            (String(x), Float(y)) => Value::string(x.clone() + &y.to_string()),
+            (String(x), Char(y)) => Value::string(x.clone() + &y.to_string()),
+            (Int(x), String(y)) => Value::string(x.to_string() + y),
+            (Int(x), Float(y)) => Value::float((*x as f64) + y),
+            (Float(x), String(y)) => Value::string(x.to_string() + y),
+            (Float(x), Int(y)) => Value::float(x + (*y as f64)),
+            (Char(x), String(y)) => Value::string(x.to_string() + y),
+            (Char(x), Char(y)) => Value::string(x.to_string() + &y.to_string()),
+            (Bool(x), Bool(y)) => Value::int((*x as i64) + (*y as i64)),
+            (Bool(x), Int(y)) => Value::int((*x as i64) + y),
+            (Int(x), Bool(y)) => Value::int(x + (*y as i64)),
+            (Bool(x), Float(y)) => Value::float((*x as i64) as f64 + y),
+            (Float(x), Bool(y)) => Value::float(x + (*y as i64) as f64),
 
-            (None,      Int(y))    => Value::int(*y),
-            (Int(x),    None)      => Value::int(*x),
-            (None,      Float(y))  => Value::float(*y),
-            (Float(x),  None)      => Value::float(*x),
-            (None,      None)      => Value::int(0),
+            (None, Int(y)) => Value::int(*y),
+            (Int(x), None) => Value::int(*x),
+            (None, Float(y)) => Value::float(*y),
+            (Float(x), None) => Value::float(*x),
+            (None, None) => Value::int(0),
             _ => {
-                eprintln!("🛑 add(): unsupported operand types: {:?} + {:?}", a.value, b.value);
+                eprintln!(
+                    "🛑 add(): unsupported operand types: {:?} + {:?}",
+                    a.value, b.value
+                );
                 panic!("Invalid types for Add operation");
             }
         }
@@ -241,18 +251,17 @@ impl VM {
         }
     }
 
-
-   pub fn equal(&self, a: &Value, b: &Value) -> Value {
+    pub fn equal(&self, a: &Value, b: &Value) -> Value {
         use bytecode::value::ValueType::*;
         let result = match (&a.value, &b.value) {
-            (Int(x),    Int(y))    => x == y,
-            (Float(x),  Float(y))  => x == y,
-            (Int(x),    Float(y))  => (*x as f64) == *y,
-            (Float(x),  Int(y))    => *x == (*y as f64),
+            (Int(x), Int(y)) => x == y,
+            (Float(x), Float(y)) => x == y,
+            (Int(x), Float(y)) => (*x as f64) == *y,
+            (Float(x), Int(y)) => *x == (*y as f64),
             (String(x), String(y)) => x == y,
-            (Char(x),   Char(y))   => x == y,
-            (Bool(x),   Bool(y))   => x == y,
-            _                      => false,
+            (Char(x), Char(y)) => x == y,
+            (Bool(x), Bool(y)) => x == y,
+            _ => false,
         };
         Value::boolean(result)
     }
@@ -265,11 +274,11 @@ impl VM {
     pub fn greater(&self, a: &Value, b: &Value) -> Value {
         use bytecode::value::ValueType::*;
         let res = match (&a.value, &b.value) {
-            (Int(x),    Int(y))    => x > y,
-            (Float(x),  Float(y))  => x > y,
-            (Int(x),    Float(y))  => (*x as f64) > *y,
-            (Float(x),  Int(y))    => *x > (*y as f64),
-            (String(x), String(y)) => x > y,   
+            (Int(x), Int(y)) => x > y,
+            (Float(x), Float(y)) => x > y,
+            (Int(x), Float(y)) => (*x as f64) > *y,
+            (Float(x), Int(y)) => *x > (*y as f64),
+            (String(x), String(y)) => x > y,
             _ => panic!("Invalid types for `>`: {:?} > {:?}", a.value, b.value),
         };
         Value::boolean(res)
@@ -278,11 +287,11 @@ impl VM {
     pub fn less(&self, a: &Value, b: &Value) -> Value {
         use bytecode::value::ValueType::*;
         let res = match (&a.value, &b.value) {
-            (Int(x),    Int(y))    => x < y,
-            (Float(x),  Float(y))  => x < y,
-            (Int(x),    Float(y))  => (*x as f64) < *y,
-            (Float(x),  Int(y))    => *x < (*y as f64),
-            (String(x), String(y)) => x < y,    
+            (Int(x), Int(y)) => x < y,
+            (Float(x), Float(y)) => x < y,
+            (Int(x), Float(y)) => (*x as f64) < *y,
+            (Float(x), Int(y)) => *x < (*y as f64),
+            (String(x), String(y)) => x < y,
             _ => panic!("Invalid types for `<`: {:?} < {:?}", a.value, b.value),
         };
         Value::boolean(res)
@@ -323,9 +332,9 @@ impl VM {
     fn negate(&self, value: &Value) -> Value {
         use bytecode::value::ValueType;
         match &value.value {
-            ValueType::Int(v)   => Value::int(-v),
+            ValueType::Int(v) => Value::int(-v),
             ValueType::Float(v) => Value::float(-v),
-            ValueType::Bool(b)  => Value::boolean(!b),
+            ValueType::Bool(b) => Value::boolean(!b),
             other => panic!("Invalid type for Negate operation: {:?}", other),
         }
     }
@@ -334,17 +343,17 @@ impl VM {
         match value.value {
             ValueType::Bool(b) => b,
             ValueType::None => false,
-            ValueType::Int(b)=>b!=0,
-            ValueType::Float(b)=>b!=0.0,
+            ValueType::Int(b) => b != 0,
+            ValueType::Float(b) => b != 0.0,
             _ => true,
         }
     }
-    pub fn is_falsey(&self,val: &Value) -> bool {
+    pub fn is_falsey(&self, val: &Value) -> bool {
         match val.value {
             ValueType::None => true,
             ValueType::Bool(bool_val) => !bool_val,
             ValueType::Int(val) => val == 0,
-            ValueType::Float(val)=>val==0.0,
+            ValueType::Float(val) => val == 0.0,
             _ => false,
         }
     }
@@ -368,89 +377,85 @@ impl VM {
         }
     }
 
-   pub fn invoke_from_jit(&mut self,
-                       base: usize,
-                       callee_slot: usize,
-                       argc: usize) -> i64          
-{
-    let callee_val = self.registers[callee_slot].clone();
+    pub fn invoke_from_jit(&mut self, base: usize, callee_slot: usize, argc: usize) -> i64 {
+        let callee_val = self.registers[callee_slot].clone();
 
-    match callee_val.value {
-    
-        ValueType::NativeFunction(func, arity) => {
-            assert_eq!(arity, argc);
-            let args : Vec<_> = (0..argc)
+        match callee_val.value {
+            ValueType::NativeFunction(func, arity) => {
+                assert_eq!(arity, argc);
+                let args: Vec<_> = (0..argc)
                     .map(|i| self.registers[callee_slot + 1 + i].clone())
                     .collect();
-            let rv = func(&args);
-            return rv.as_i64();                   
-        }
+                let rv = func(&args);
+                return rv.as_i64();
+            }
 
-        ValueType::Function(ref f_rc) => {
-            {
-                let mut fobj = f_rc.borrow_mut();
-                if fobj.jitted.is_none() {
-                    JIT_CTX.lock().unwrap().compile_function(&mut *fobj);
+            ValueType::Function(ref f_rc) => {
+                {
+                    let mut fobj = f_rc.borrow_mut();
+                    if fobj.jitted.is_none() {
+                        JIT_CTX.lock().unwrap().compile_function(&mut *fobj);
+                    }
+                }
+
+                let code_ptr = f_rc.borrow().jitted.expect("compiled ptr");
+
+                unsafe {
+                    match argc {
+                        0 => {
+                            let fp: extern "C" fn(i64, i64) -> i64 = core::mem::transmute(code_ptr);
+                            fp(self as *mut _ as i64, base as i64)
+                        }
+                        1 => {
+                            let fp: extern "C" fn(i64, i64, i64) -> i64 =
+                                core::mem::transmute(code_ptr);
+                            fp(
+                                self as *mut _ as i64,
+                                base as i64,
+                                self.registers[callee_slot + 1].as_i64(),
+                            )
+                        }
+                        2 => {
+                            let fp: extern "C" fn(i64, i64, i64, i64) -> i64 =
+                                core::mem::transmute(code_ptr);
+                            fp(
+                                self as *mut _ as i64,
+                                base as i64,
+                                self.registers[callee_slot + 1].as_i64(),
+                                self.registers[callee_slot + 2].as_i64(),
+                            )
+                        }
+
+                        3 => {
+                            let fp: extern "C" fn(i64, i64, i64, i64, i64) -> i64 =
+                                core::mem::transmute(code_ptr);
+                            fp(
+                                self as *mut _ as i64,
+                                base as i64,
+                                self.registers[callee_slot + 1].as_i64(),
+                                self.registers[callee_slot + 2].as_i64(),
+                                self.registers[callee_slot + 3].as_i64(),
+                            )
+                        }
+                        _ => todo!(">3 args"),
+                    }
                 }
             }
 
-            let code_ptr = f_rc.borrow().jitted.expect("compiled ptr");
-
-        
-            unsafe {
-                match argc {
-                    0 => {
-                        let fp: extern "C" fn(i64,i64)          -> i64
-                            = core::mem::transmute(code_ptr);
-                        fp(self as *mut _ as i64, base as i64)
-                    }
-                    1 => {
-                        let fp: extern "C" fn(i64,i64,i64)       -> i64
-                            = core::mem::transmute(code_ptr);
-                        fp(self as *mut _ as i64, base as i64,
-                           self.registers[callee_slot + 1].as_i64())
-                    }
-                    2 => {
-
-    let fp: extern "C" fn(i64, i64, i64, i64) -> i64 =
-        core::mem::transmute(code_ptr);
-    fp(
-        self as *mut _ as i64,
-        base as i64,
-        self.registers[callee_slot + 1].as_i64(),
-        self.registers[callee_slot + 2].as_i64(),
-    )
-}
-
-3 => {
-    let fp: extern "C" fn(i64, i64, i64, i64, i64) -> i64 =
-        core::mem::transmute(code_ptr);
-    fp(
-        self as *mut _ as i64,
-        base as i64,
-        self.registers[callee_slot + 1].as_i64(),
-        self.registers[callee_slot + 2].as_i64(),
-        self.registers[callee_slot + 3].as_i64(),
-    )
-}
-                    _ => todo!(">3 args"),
-                }
-            }
+            _ => panic!("invoke_from_jit on non-function value"),
         }
-
-        _ => panic!("invoke_from_jit on non-function value"),
     }
-}
 
     /// Allocate a fresh array in a new register, return its slot.
     pub fn new_array_jit(&mut self, len: usize) -> usize {
-        let slot = self.registers.iter()
+        let slot = self
+            .registers
+            .iter()
             .position(|v| matches!(v.value, ValueType::None))
             .expect("no free register for new array");
         self.registers[slot] = Value::array(vec![Value::none(); len]);
         slot
     }
-
 
     pub fn array_get_jit(&mut self, arr_slot: usize, idx: usize) -> usize {
         let slot = self.new_array_jit(0); // temp slot for the value
@@ -463,18 +468,14 @@ impl VM {
         }
     }
 
-    pub fn array_set_jit(&mut self,
-                     arr_slot: usize,
-                     idx: usize,
-                     val_slot: usize)
-    {
-        let new_val = self.registers[val_slot].clone();  
+    pub fn array_set_jit(&mut self, arr_slot: usize, idx: usize, val_slot: usize) {
+        let new_val = self.registers[val_slot].clone();
         if let ValueType::Array(ref rc_vec) = &mut self.registers[arr_slot].value {
             rc_vec.borrow_mut()[idx] = new_val;
         } else {
             panic!("array_set_jit on non-array");
         }
-        }
+    }
 
     pub fn print_jit(&mut self, val_slot: usize) {
         println!("{}", self.registers[val_slot]);
@@ -486,7 +487,7 @@ lazy_static! {
     static ref DISPATCH_TABLE: Vec<OpHandler> = {
         let mut table: Vec<OpHandler> = Vec::with_capacity(0x27);
 
-     
+
         table.push(handle_invalid);            // 0x00
         table.push(VM::handle_load_constant);  // 0x01
         table.push(VM::handle_define_global);  // 0x02
@@ -559,82 +560,94 @@ impl VM {
         if let OpCode::LoadConstant(dest, val) = op {
             let b = self.base();
             self.registers[b + dest] = val;
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_inc_loop_if_less(&mut self, op: OpCode) {
-    if let OpCode::IncLoopIfLess(idx_r, limit_r, target) = op {
-        let b = self.base();
-        if self.less(&self.registers[b + idx_r], &self.registers[b + limit_r]).value == ValueType::Bool(true)
-        {
-            // idx += 1
-            let one = Value::int(1);
-            self.registers[b + idx_r] = self.add(&self.registers[b + idx_r], &one);
-            self.pc = target;
+        if let OpCode::IncLoopIfLess(idx_r, limit_r, target) = op {
+            let b = self.base();
+            if self
+                .less(&self.registers[b + idx_r], &self.registers[b + limit_r])
+                .value
+                == ValueType::Bool(true)
+            {
+                // idx += 1
+                let one = Value::int(1);
+                self.registers[b + idx_r] = self.add(&self.registers[b + idx_r], &one);
+                self.pc = target;
+            }
         }
     }
-}
 
     pub fn handle_define_global(&mut self, op: OpCode) {
-    if let OpCode::DefineGlobal(r, name) = op {
-        let b = self.base();
+        if let OpCode::DefineGlobal(r, name) = op {
+            let b = self.base();
 
-        let table = GLOBAL_NAMES.lock().unwrap();
-        let (leaked_str, _) = table
-            .get_key_value(name.as_str())
-            .expect("global not interned");
+            let table = GLOBAL_NAMES.lock().unwrap();
+            let (leaked_str, _) = table
+                .get_key_value(name.as_str())
+                .expect("global not interned");
 
-        self.globals.insert(*leaked_str, self.registers[b + r].clone());
-    } else {
-        unreachable!()
-    }
-}
-
-pub fn handle_get_global(&mut self, op: OpCode) {
-    if let OpCode::GetGlobal(d, name) = op {
-        let b = self.base();
-        let key: &str = name.as_str();
-        let val = self.globals
-            .get(key)
-            .unwrap_or_else(|| panic!("Undefined global '{}'", key))
-            .clone();
-
-        self.registers[b + d] = val;
-    } else {
-        unreachable!()
-    }
-}
-
-  pub fn handle_set_global(&mut self, op: OpCode) {
-    if let OpCode::SetGlobal(r, name) = op {
-        let b = self.base();
-        let table = GLOBAL_NAMES.lock().unwrap();
-        let (leaked_str, _) = table
-            .get_key_value(name.as_str())
-            .expect("global not interned");
-
-        if !self.globals.contains_key(*leaked_str) {
-            panic!("Undefined global '{}'", leaked_str);
+            self.globals
+                .insert(*leaked_str, self.registers[b + r].clone());
+        } else {
+            unreachable!()
         }
-
-        self.globals.insert(*leaked_str, self.registers[b + r].clone());
-    } else {
-        unreachable!()
     }
-}
+
+    pub fn handle_get_global(&mut self, op: OpCode) {
+        if let OpCode::GetGlobal(d, name) = op {
+            let b = self.base();
+            let key: &str = name.as_str();
+            let val = self
+                .globals
+                .get(key)
+                .unwrap_or_else(|| panic!("Undefined global '{}'", key))
+                .clone();
+
+            self.registers[b + d] = val;
+        } else {
+            unreachable!()
+        }
+    }
+
+    pub fn handle_set_global(&mut self, op: OpCode) {
+        if let OpCode::SetGlobal(r, name) = op {
+            let b = self.base();
+            let table = GLOBAL_NAMES.lock().unwrap();
+            let (leaked_str, _) = table
+                .get_key_value(name.as_str())
+                .expect("global not interned");
+
+            if !self.globals.contains_key(*leaked_str) {
+                panic!("Undefined global '{}'", leaked_str);
+            }
+
+            self.globals
+                .insert(*leaked_str, self.registers[b + r].clone());
+        } else {
+            unreachable!()
+        }
+    }
 
     pub fn handle_get_local(&mut self, op: OpCode) {
         if let OpCode::GetLocal(dst, slot) = op {
             let b = self.base();
             self.registers[b + dst] = self.registers[b + slot].clone();
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_set_local(&mut self, op: OpCode) {
         if let OpCode::SetLocal(src, slot) = op {
             let b = self.base();
             self.registers[b + slot] = self.registers[b + src].clone();
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_jump_if_false(&mut self, op: OpCode) {
@@ -643,116 +656,125 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             if !self.is_truthy(&self.registers[b + r]) {
                 self.pc = self.pc.wrapping_add(offset);
             }
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_jump(&mut self, op: OpCode) {
         if let OpCode::Jump(offset) = op {
             self.pc = self.pc.wrapping_add(offset);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
-      pub fn handle_loop(&mut self, op: OpCode) {
+    pub fn handle_loop(&mut self, op: OpCode) {
         if let OpCode::Loop(offset) = op {
-           self.pc = self.pc.wrapping_sub(offset);
-         } else {
-             unreachable!()
-         }
-     }
+            self.pc = self.pc.wrapping_sub(offset);
+        } else {
+            unreachable!()
+        }
+    }
 
     pub fn handle_move(&mut self, op: OpCode) {
         if let OpCode::Move(d, s) = op {
             let b = self.base();
             self.registers[b + d] = self.registers[b + s].clone();
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_true(&mut self, op: OpCode) {
         if let OpCode::True(d) = op {
             let b = self.base();
             self.registers[b + d] = Value::boolean(true);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_false(&mut self, op: OpCode) {
         if let OpCode::False(d) = op {
             let b = self.base();
             self.registers[b + d] = Value::boolean(false);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_none(&mut self, op: OpCode) {
         if let OpCode::None(d) = op {
             let b = self.base();
             self.registers[b + d] = Value::none();
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_pop(&mut self, op: OpCode) {
         if let OpCode::Pop(d) = op {
             let b = self.base();
             self.registers[b + d] = Value::none();
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_add(&mut self, op: OpCode) {
         if let OpCode::Add(d, a, b2) = op {
             let b = self.base();
-            self.registers[b + d] = self.add(
-                &self.registers[b + a],
-                &self.registers[b + b2],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] = self.add(&self.registers[b + a], &self.registers[b + b2]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_subtract(&mut self, op: OpCode) {
         if let OpCode::Subtract(d, a, b2) = op {
             let b = self.base();
-            self.registers[b + d] = self.subtract(
-                &self.registers[b + a],
-                &self.registers[b + b2],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] = self.subtract(&self.registers[b + a], &self.registers[b + b2]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_multiply(&mut self, op: OpCode) {
         if let OpCode::Multiply(d, a, b2) = op {
             let b = self.base();
-            self.registers[b + d] = self.multiply(
-                &self.registers[b + a],
-                &self.registers[b + b2],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] = self.multiply(&self.registers[b + a], &self.registers[b + b2]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_divide(&mut self, op: OpCode) {
         if let OpCode::Divide(d, a, b2) = op {
             let b = self.base();
-            self.registers[b + d] = self.divide(
-                &self.registers[b + a],
-                &self.registers[b + b2],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] = self.divide(&self.registers[b + a], &self.registers[b + b2]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_exponentiate(&mut self, op: OpCode) {
         if let OpCode::Exponentiate(d, e, base_r) = op {
             let b = self.base();
-            self.registers[b + d] = self.exponentiate(
-                &self.registers[b + base_r],
-                &self.registers[b + e],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] =
+                self.exponentiate(&self.registers[b + base_r], &self.registers[b + e]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_int_divide(&mut self, op: OpCode) {
         if let OpCode::IntDivide(d, a, b2) = op {
             let b = self.base();
-            self.registers[b + d] = self.intdivide(
-                &self.registers[b + a],
-                &self.registers[b + b2],
-            );
-        } else { unreachable!() }
+            self.registers[b + d] = self.intdivide(&self.registers[b + a], &self.registers[b + b2]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_mod(&mut self, op: OpCode) {
@@ -761,86 +783,94 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let va = &self.registers[b + a];
             let vb = &self.registers[b + bb];
             match (&va.value, &vb.value) {
-                (ValueType::Int(x), ValueType::Int(y)) =>
-                    self.registers[b + d] = Value::int(x % y),
+                (ValueType::Int(x), ValueType::Int(y)) => self.registers[b + d] = Value::int(x % y),
                 _ => panic!("Invalid types for `%`: {:?} % {:?}", va, vb),
             }
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
-   pub fn handle_return(&mut self, op: OpCode) {
-    if let OpCode::Return(r) = op {
-        let b  = self.base();
-        let rv = self.registers[b + r].clone();
+    pub fn handle_return(&mut self, op: OpCode) {
+        if let OpCode::Return(r) = op {
+            let b = self.base();
+            let rv = self.registers[b + r].clone();
 
-        match self.frames.pop() {
-            Some(frame) => {
-                self.chunk                  = frame.chunk;
-                self.pc                     = frame.return_pc;
-                self.registers[frame.return_reg] = rv;
-            }
+            match self.frames.pop() {
+                Some(frame) => {
+                    self.chunk = frame.chunk;
+                    self.pc = frame.return_pc;
+                    self.registers[frame.return_reg] = rv;
+                }
 
-            None => {
-                self.pc = self.chunk.borrow().code.len();    
+                None => {
+                    self.pc = self.chunk.borrow().code.len();
+                }
             }
         }
     }
-}
-
 
     pub fn handle_bitwise_not(&mut self, op: OpCode) {
         if let OpCode::BitwiseNot(d, s) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.bitwise_not(&self.registers[b + s]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.bitwise_not(&self.registers[b + s]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_negate(&mut self, op: OpCode) {
         if let OpCode::Negate(d, s) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.negate(&self.registers[b + s]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.negate(&self.registers[b + s]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_print(&mut self, op: OpCode) {
         if let OpCode::Print(r) = op {
             let b = self.base();
             println!("{}", self.registers[b + r]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_equal(&mut self, op: OpCode) {
         if let OpCode::Equal(d, a, bb) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.equal(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.equal(&self.registers[b + a], &self.registers[b + bb]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_not_equal(&mut self, op: OpCode) {
         if let OpCode::NotEqual(d, a, bb) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.not_equal(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.not_equal(&self.registers[b + a], &self.registers[b + bb]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_greater(&mut self, op: OpCode) {
         if let OpCode::Greater(d, a, bb) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.greater(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.greater(&self.registers[b + a], &self.registers[b + bb]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_less(&mut self, op: OpCode) {
         if let OpCode::Less(d, a, bb) = op {
             let b = self.base();
-            self.registers[b + d] =
-                self.less(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+            self.registers[b + d] = self.less(&self.registers[b + a], &self.registers[b + bb]);
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_bitwise_and(&mut self, op: OpCode) {
@@ -848,7 +878,9 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let b = self.base();
             self.registers[b + d] =
                 self.bitwise_and(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_bitwise_or(&mut self, op: OpCode) {
@@ -856,7 +888,9 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let b = self.base();
             self.registers[b + d] =
                 self.bitwise_or(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_bitwise_xor(&mut self, op: OpCode) {
@@ -864,7 +898,9 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let b = self.base();
             self.registers[b + d] =
                 self.bitwise_xor(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_greater_equal(&mut self, op: OpCode) {
@@ -872,7 +908,9 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let b = self.base();
             self.registers[b + d] =
                 self.greater_equal(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_less_equal(&mut self, op: OpCode) {
@@ -880,7 +918,9 @@ pub fn handle_get_global(&mut self, op: OpCode) {
             let b = self.base();
             self.registers[b + d] =
                 self.less_equal(&self.registers[b + a], &self.registers[b + bb]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
     fn call_interpreted(
         &mut self,
@@ -889,119 +929,116 @@ pub fn handle_get_global(&mut self, op: OpCode) {
         argc: usize,
         callee_reg: usize,
     ) {
-        let caller_base  = self.base();
-        let callee_slot  = caller_base + callee_reg;
+        let caller_base = self.base();
+        let callee_slot = caller_base + callee_reg;
         let new_base = callee_slot + 1;
 
         self.frames.push(CallFrame {
-            return_pc:  self.pc,
+            return_pc: self.pc,
             return_reg: caller_base + dest,
-            chunk:      self.chunk.clone(),   
-            base:       new_base,             
+            chunk: self.chunk.clone(),
+            base: new_base,
         });
         self.chunk = f_rc.borrow().chunk.clone();
-        self.pc    = 0;
+        self.pc = 0;
     }
-  pub fn handle_call(&mut self, op: OpCode) {
-    if let OpCode::Call(dest, callee_reg, argc) = op {
-        let frame_base = self.base();
-        let callee_slot = frame_base + callee_reg;
-        let mut arg_buf = Vec::<i64>::with_capacity(argc);
-        for i in 0..argc {
-            arg_buf.push(self.registers[callee_slot + 1 + i].as_i64());
-        }
-
-        let callee_val = self.registers[callee_slot].clone();   
-        let rv = match callee_val.value {
-    ValueType::Function(ref f_rc) => {
-      
-        if !self.jit_enabled {
-            self.call_interpreted(f_rc.clone(), dest, argc, callee_reg);
-            return;                          
-        }
-        {
-             self.frames.push(CallFrame {
-                return_pc:  self.pc,
-                return_reg: frame_base + dest,
-                chunk:      self.chunk.clone(),
-                base:       frame_base + callee_reg,
-            });
-            let mut fobj = f_rc.borrow_mut();
-            if fobj.jitted.is_none() {
-                JIT_CTX.lock().unwrap()
-                       .compile_function(&mut *fobj);
+    pub fn handle_call(&mut self, op: OpCode) {
+        if let OpCode::Call(dest, callee_reg, argc) = op {
+            let frame_base = self.base();
+            let callee_slot = frame_base + callee_reg;
+            let mut arg_buf = Vec::<i64>::with_capacity(argc);
+            for i in 0..argc {
+                arg_buf.push(self.registers[callee_slot + 1 + i].as_i64());
             }
-        }
 
-        let code_ptr  = f_rc.borrow().jitted.expect("compiled ptr");
-        let frame_base = self.base() as i64;
-        let self_ptr   = self as *mut _ as i64;
-
-        unsafe {
-            match argc {
-                0 => {
-                    let fp: extern "C" fn(i64,i64)->i64 =
-                        std::mem::transmute(code_ptr);
-                    fp(self_ptr, frame_base)
-                }
-                1 => {
-                    let fp: extern "C" fn(i64,i64,i64)->i64 =
-                        std::mem::transmute(code_ptr);
-                    fp(self_ptr, frame_base, arg_buf[0])
-                }
-                2 => {
-                    let fp: extern "C" fn(i64,i64,i64,i64)->i64 =
-                        std::mem::transmute(code_ptr);
-                    fp(self_ptr, frame_base, arg_buf[0], arg_buf[1])
-                }
-                3 => {
-                    let fp: extern "C" fn(i64,i64,i64,i64,i64)->i64 =
-                        std::mem::transmute(code_ptr);
-                    fp(self_ptr, frame_base,
-                       arg_buf[0], arg_buf[1], arg_buf[2])
-                }
-                n => {
-                    extern "C" {
-                        fn tundra_apply_variadic(
-                            fn_ptr: *const u8,
-                            vm_ptr: i64,
-                            base:   i64,
-                            argv:  *const i64,
-                            argc:   i64
-                        ) -> i64;
+            let callee_val = self.registers[callee_slot].clone();
+            let rv = match callee_val.value {
+                ValueType::Function(ref f_rc) => {
+                    if !self.jit_enabled {
+                        self.call_interpreted(f_rc.clone(), dest, argc, callee_reg);
+                        return;
                     }
-                    tundra_apply_variadic(
-                        code_ptr,
-                        self_ptr,
-                        frame_base,
-                        arg_buf.as_ptr(),
-                        n as i64)
+                    {
+                        self.frames.push(CallFrame {
+                            return_pc: self.pc,
+                            return_reg: frame_base + dest,
+                            chunk: self.chunk.clone(),
+                            base: frame_base + callee_reg,
+                        });
+                        let mut fobj = f_rc.borrow_mut();
+                        if fobj.jitted.is_none() {
+                            JIT_CTX.lock().unwrap().compile_function(&mut *fobj);
+                        }
+                    }
+
+                    let code_ptr = f_rc.borrow().jitted.expect("compiled ptr");
+                    let frame_base = self.base() as i64;
+                    let self_ptr = self as *mut _ as i64;
+
+                    unsafe {
+                        match argc {
+                            0 => {
+                                let fp: extern "C" fn(i64, i64) -> i64 =
+                                    std::mem::transmute(code_ptr);
+                                fp(self_ptr, frame_base)
+                            }
+                            1 => {
+                                let fp: extern "C" fn(i64, i64, i64) -> i64 =
+                                    std::mem::transmute(code_ptr);
+                                fp(self_ptr, frame_base, arg_buf[0])
+                            }
+                            2 => {
+                                let fp: extern "C" fn(i64, i64, i64, i64) -> i64 =
+                                    std::mem::transmute(code_ptr);
+                                fp(self_ptr, frame_base, arg_buf[0], arg_buf[1])
+                            }
+                            3 => {
+                                let fp: extern "C" fn(i64, i64, i64, i64, i64) -> i64 =
+                                    std::mem::transmute(code_ptr);
+                                fp(self_ptr, frame_base, arg_buf[0], arg_buf[1], arg_buf[2])
+                            }
+                            n => {
+                                extern "C" {
+                                    fn tundra_apply_variadic(
+                                        fn_ptr: *const u8,
+                                        vm_ptr: i64,
+                                        base: i64,
+                                        argv: *const i64,
+                                        argc: i64,
+                                    ) -> i64;
+                                }
+                                tundra_apply_variadic(
+                                    code_ptr,
+                                    self_ptr,
+                                    frame_base,
+                                    arg_buf.as_ptr(),
+                                    n as i64,
+                                )
+                            }
+                        }
+                    }
                 }
-            }
+                ValueType::NativeFunction(func, arity) => {
+                    assert_eq!(arity, argc);
+                    let args: Vec<_> = (0..argc)
+                        .map(|i| self.registers[callee_slot + 1 + i].clone())
+                        .collect();
+                    let v = func(&args);
+                    self.registers[frame_base + dest] = v;
+                    return; // done
+                }
+
+                _ => panic!("attempt to call a non-function value"),
+            };
+
+            let rv_val = unsafe { Value::from_i64(rv) };
+
+            let frame = self.frames.pop().unwrap();
+            self.chunk = frame.chunk;
+            self.pc = frame.return_pc;
+            self.registers[frame.return_reg] = rv_val;
         }
     }
-            ValueType::NativeFunction(func, arity) => {
-                assert_eq!(arity, argc);
-                let args: Vec<_> = (0..argc)
-                    .map(|i| self.registers[callee_slot + 1 + i].clone())
-                    .collect();
-                let v = func(&args);
-                self.registers[frame_base + dest] = v;
-                return;                         // done
-            }
-
-            _ => panic!("attempt to call a non-function value"),
-        };
-
-        let rv_val = unsafe { Value::from_i64(rv) };
-
-let frame = self.frames.pop().unwrap();
-self.chunk                  = frame.chunk;
-self.pc                     = frame.return_pc;     
-self.registers[frame.return_reg] = rv_val;
-    }
-}
-
 
     pub fn handle_new_array(&mut self, op: OpCode) {
         if let OpCode::NewArray(dest, len_reg) = op {
@@ -1011,7 +1048,9 @@ self.registers[frame.return_reg] = rv_val;
                 _ => panic!("Invalid array length"),
             };
             self.registers[b + dest] = Value::array(vec![Value::none(); len]);
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_get_index(&mut self, op: OpCode) {
@@ -1030,7 +1069,9 @@ self.registers[frame.return_reg] = rv_val;
             } else {
                 panic!("Indexing non‐array");
             }
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 
     pub fn handle_set_index(&mut self, op: OpCode) {
@@ -1047,8 +1088,8 @@ self.registers[frame.return_reg] = rv_val;
             } else {
                 panic!("Index assignment on non‐array");
             }
-        } else { unreachable!() }
+        } else {
+            unreachable!()
+        }
     }
 }
-
-  
