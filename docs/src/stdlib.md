@@ -45,6 +45,9 @@ print(len(nums))  # → 5
 0018 Line    6    Return(2)
 ```
 ### Output 
+
 Dexter Morgan <-stdin
+
 ""Hello, "Dexter Morgan"
+
 5
