@@ -1,0 +1,9 @@
+.book .navbar .title {
+  font-size: 1.5em;
+  background: url('../images/tundraLogo.png') no-repeat left center;
+  padding-left: 1.5em;
+}
+
+.book .content code {
+  background-color: #f0f0f0;
+}

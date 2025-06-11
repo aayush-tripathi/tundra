@@ -1,0 +1,7 @@
+[book]
+title = "The Tundra Language Reference"
+author = "Aayush Tripathi"
+language = "en"
+description = "This book is a reference on the syntax and workig of Tundra!"
+[output.html]
+default-theme = "light"
