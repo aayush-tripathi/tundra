@@ -325,6 +325,7 @@ impl VM {
     fn bitwise_not(&self, value: &Value) -> Value {
         match value.value {
             ValueType::Int(v) => Value::int(!v),
+            ValueType::Bool(v)=> Value::boolean(!v),
             _ => panic!("Invalid type for BitwiseNot operation"),
         }
     }
@@ -360,12 +361,14 @@ impl VM {
     pub fn bitwise_and(&self, a: &Value, b: &Value) -> Value {
         match (&a.value, &b.value) {
             (ValueType::Int(a), ValueType::Int(b)) => Value::int(a & b),
+            (ValueType::Bool(a), ValueType::Bool(b)) => Value::boolean(*a & *b),
             _ => panic!("Invalid types for BitwiseAnd operation"),
         }
     }
     pub fn bitwise_or(&self, a: &Value, b: &Value) -> Value {
         match (&a.value, &b.value) {
             (ValueType::Int(a), ValueType::Int(b)) => Value::int(a | b),
+            (ValueType::Bool(a), ValueType::Bool(b)) => Value::boolean(*a || *b),
             _ => panic!("Invalid types for BitwiseOr operation"),
         }
     }

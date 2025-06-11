@@ -1,3 +1,5 @@
 # Rust build artifacts
 target/
 tundra/target/
+# mdBook build output
+/docs/book/
