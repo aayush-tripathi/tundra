@@ -2,7 +2,7 @@ name: Build & Publish tundra-cli
 
 on:
   release:
-    types: [published]
+    types: [created, published, prereleased]
 
 jobs:
   build:
