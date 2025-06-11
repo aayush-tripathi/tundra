@@ -6,6 +6,9 @@
 
 Tundra is a Python-inspired, high-performance programming language implemented in Rust. It features a clean syntax designed for readability and a register-based virtual machine architecture that ensures efficient execution.
 
+## Wiki
+Checkout [The Tundra Reference](https://aayush-tripathi.github.io/tundra/)
+
 ## Features
 
 * **Pythonic Syntax:** Write code in a style that feels natural, clean, and intuitive.
