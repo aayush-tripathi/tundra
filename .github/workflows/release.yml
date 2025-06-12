@@ -47,10 +47,11 @@ jobs:
       id: package_windows
       shell: pwsh
       run: |
-        Compress-Archive -Path target\release\tundra-cli.exe `
-                         -DestinationPath target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip
-        Add-Content -Path $env:GITHUB_OUTPUT `
-                    -Value "path=$(Resolve-Path target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip)"
+        $zipPath = "target/release/tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
+        Compress-Archive `
+          -Path  "target/release/tundra-cli.exe" `
+          -DestinationPath $zipPath -Force
+        "path=$zipPath" >> $env:GITHUB_OUTPUT
 
     - name: Upload asset (Windows)
       if: runner.os == 'Windows'
