@@ -1,45 +1,45 @@
 name: Build & Publish tundra-cli
+
 permissions:
   contents: write
+
 on:
+
   release:
     types: [created, published, prereleased]
 
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
 
-      - name: Build tundra-cli
-        run: cargo build --release -p tundra-cli
+    - name: Build tundra-cli
+      run: cargo build --release -p tundra-cli
 
-      - name: Package binary
-        id: package
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            cd target/release
-            tar czvf tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz tundra-cli
-            echo "asset=tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
-          else
-            cd target/release
-            powershell -Command "Compress-Archive tundra-cli.exe -DestinationPath tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
-            echo "asset=tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip" >> $GITHUB_OUTPUT
-          fi
+    - name: Package binary
+      id: package                         
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          cd target/release
+          tar czvf tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz tundra-cli
+          echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
+        else
+          cd target/release
+          powershell -Command "Compress-Archive tundra-cli.exe -DestinationPath tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
+          echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip" >> $GITHUB_OUTPUT
+        fi
 
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v2
-        with:
-          upload_url:     ${{ github.event.release.upload_url }}
-          asset_path:     target/release/${{ steps.package.outputs.asset }}
-          asset_name:     ${{ steps.package.outputs.asset }}
-          asset_content_type: application/octet-stream
+    - name: Upload asset to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.package.outputs.path }}
