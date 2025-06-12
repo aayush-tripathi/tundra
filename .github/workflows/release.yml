@@ -6,6 +6,7 @@ permissions:
 on:
   release:
     types: [created, published, prereleased]
+  workflow_dispatch: {}          
 
 jobs:
   build:
@@ -25,27 +26,34 @@ jobs:
     - name: Build tundra-cli
       run: cargo build --release -p tundra-cli
 
-    - name: Package for Linux
+    # ---------- Linux packaging ----------
+    - name: Package (Linux)
       if: runner.os == 'Linux'
-      id: package
+      id: package_linux
       run: |
         cd target/release
         tar czvf tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz tundra-cli
-        echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
+        echo "path=$(pwd)/tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
 
-    - name: Package for Windows
-      if: runner.os == 'Windows'
-      id: package
-      shell: pwsh
-      run: |
-        # compress the .exe into a zip
-        Compress-Archive -Path target\release\tundra-cli.exe `
-                         -DestinationPath target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip
-        # record the zip’s path for the next step
-        Add-Content -Path $env:GITHUB_OUTPUT `
-                    -Value "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
-
-    - name: Upload asset to release
+    - name: Upload asset (Linux)
+      if: runner.os == 'Linux'
       uses: softprops/action-gh-release@v1
       with:
-        files: ${{ steps.package.outputs.path }}
+        files: ${{ steps.package_linux.outputs.path }}
+
+    # ---------- Windows packaging ----------
+    - name: Package (Windows)
+      if: runner.os == 'Windows'
+      id: package_windows
+      shell: pwsh
+      run: |
+        Compress-Archive -Path target\release\tundra-cli.exe `
+                         -DestinationPath target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip
+        Add-Content -Path $env:GITHUB_OUTPUT `
+                    -Value "path=$(Resolve-Path target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip)"
+
+    - name: Upload asset (Windows)
+      if: runner.os == 'Windows'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.package_windows.outputs.path }}
