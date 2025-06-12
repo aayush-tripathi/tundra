@@ -4,7 +4,6 @@ permissions:
   contents: write
 
 on:
-
   release:
     types: [created, published, prereleased]
 
@@ -26,18 +25,25 @@ jobs:
     - name: Build tundra-cli
       run: cargo build --release -p tundra-cli
 
-    - name: Package binary
-      id: package                         
+    - name: Package for Linux
+      if: runner.os == 'Linux'
+      id: package
       run: |
-        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          cd target/release
-          tar czvf tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz tundra-cli
-          echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
-        else
-          cd target/release
-          powershell -Command "Compress-Archive tundra-cli.exe -DestinationPath tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
-          echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip" >> $GITHUB_OUTPUT
-        fi
+        cd target/release
+        tar czvf tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz tundra-cli
+        echo "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz" >> $GITHUB_OUTPUT
+
+    - name: Package for Windows
+      if: runner.os == 'Windows'
+      id: package
+      shell: pwsh
+      run: |
+        # compress the .exe into a zip
+        Compress-Archive -Path target\release\tundra-cli.exe `
+                         -DestinationPath target\release\tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip
+        # record the zip’s path for the next step
+        Add-Content -Path $env:GITHUB_OUTPUT `
+                    -Value "path=target/release/tundra-cli-${{ github.event.release.tag_name }}-windows-x86_64.zip"
 
     - name: Upload asset to release
       uses: softprops/action-gh-release@v1
