@@ -18,9 +18,9 @@ Checkout [The Tundra Reference](https://aayush-tripathi.github.io/tundra/)
 
 ## Quick Example
 
-```python
-def fib(n):
-    if n <= 1:
+```tundra
+fun fib(n):
+    if (n <= 1):
         return n
     return fib(n - 1) + fib(n - 2)
 
@@ -34,7 +34,7 @@ To build and run your first Tundra program:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/YourUserName/tundra.git
+   git clone https://github.com/aayush-tripathi/tundra.git
    ```
 
 2. Build the compiler and VM:
