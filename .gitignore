@@ -3,3 +3,7 @@ target/
 tundra/target/
 # mdBook build output
 /docs/book/
+/target/
+**/node_modules/
+playground/dist/
+plans.txt
