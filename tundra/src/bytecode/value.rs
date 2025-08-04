@@ -11,16 +11,14 @@ pub enum ValueType {
     Float(f64),
     Char(char),
     Array(Rc<RefCell<Vec<Value>>>),
-    // A Rust‐side builtin function:
     NativeFunction(fn(&[Value]) -> Value, usize /*arity*/),
-    // A user‐defined function
     Function(Rc<RefCell<FunctionObject>>),
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct Value {
     pub value: ValueType,
 }
-/* ───────── Encoding helpers ───────── */
+
 
 pub const TAG_BITS: u64 = 0b111;
 pub const TAG_PTR: u64 = 0b000;
@@ -144,7 +142,7 @@ impl Value {
     /// loss-less, type-preserving packing into a single register
     pub fn as_i64(&self) -> i64 {
         match &self.value {
-            /* POD scalar slots */
+        
             ValueType::Int(i) => ((*i as u64) << 3 | TAG_INT) as i64,
             ValueType::Bool(false) => TAG_BOOL as i64,
             ValueType::Bool(true) => (1u64 << 3 | TAG_BOOL) as i64,
@@ -152,7 +150,6 @@ impl Value {
             ValueType::Char(c) => ((*c as u64) << 3 | TAG_CHAR) as i64,
             ValueType::Float(f) => f.to_bits() as i64,
 
-            /* everything heap-allocated – we just use the raw pointer      */
             ValueType::String(s) => {
                 let p = s.as_ptr() as u64;
                 (p | TAG_PTR) as i64
@@ -212,7 +209,7 @@ impl Value {
             }
             ValueType::Char(c) => {
                 let mut b = vec![0x05]; // Char tag
-                b.extend(&(*c as u32).to_le_bytes()); // char → 4-byte Unicode scalar
+                b.extend(&(*c as u32).to_le_bytes()); 
                 b
             }
             ValueType::String(s) => {

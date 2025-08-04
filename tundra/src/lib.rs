@@ -39,10 +39,9 @@ impl std::io::Write for OutputCapture {
 }
 
 pub fn run(src: &str) -> Result<String> {
-    // Create a shared buffer for capturing output
+    //  a shared buffer for capturing output
     let output_buffer = Rc::new(RefCell::new(Vec::<u8>::new()));
     
-    // Create the output capture and leak it to get a 'static reference
     let output_capture = Box::new(OutputCapture::new(output_buffer.clone()));
     let output_ref: &'static mut dyn std::io::Write = Box::leak(output_capture);
     
@@ -63,15 +62,10 @@ pub fn run(src: &str) -> Result<String> {
             InterpretResult::CompileError => unreachable!(),
         }
     };
-    
-    // Extract the output from the shared buffer
     let output_bytes = {
         let buffer = output_buffer.borrow();
         buffer.clone()
     };
-    
     let output_string = String::from_utf8(output_bytes).unwrap_or_default();
-    
-    // Return the result with the captured output
     result.map(|_| output_string)
 }

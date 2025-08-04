@@ -4,7 +4,7 @@ use super::opcode::OpCode;
 use crate::bytecode::value::Value;
 
 /// A compiled “chunk” of code:  
-/// - `code` holds your high-level `OpCode` instructions  
+/// - `code` holds high-level `OpCode` instructions  
 /// - `constants` is the literal pool  
 /// - `lines[i]` is the source‐line for `code[i]`
 /// - `max_register` to allocate CraneLift Variables
