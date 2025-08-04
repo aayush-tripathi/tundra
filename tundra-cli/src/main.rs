@@ -50,7 +50,7 @@ fn main() {
     }
 
     // 2) Run with **interpreter only** (no JIT)
-    let mut vm = VM::new_interpreter_only(chunk);
+    let mut vm = VM::new_interpreter_only(chunk, Box::leak(Box::new(std::io::stdout())));
     match vm.run() {
         InterpretResult::Ok => {}
         InterpretResult::CompileError => {

@@ -2,5 +2,6 @@
 members = [
   "tundra",
   "tundra-cli",
+  "executor"
 ]
 resolver = "2"

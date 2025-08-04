@@ -1,0 +1,14 @@
+[package]
+name = "executor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum   = { version = "0.8.4", features = ["json"] }
+serde  = { version = "1", features = ["derive"] }
+hyper  = { version = "1.6.0", features = ["full"] }
+tokio  = { version = "1", features = ["rt-multi-thread", "macros"] }
+tundra = { path = "../tundra" }
+http = "1.0"
+anyhow = "1"
+tower-http = {version="0.6.6",features=["cors"]}

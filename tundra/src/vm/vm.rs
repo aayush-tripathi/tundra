@@ -102,10 +102,11 @@ pub struct VM {
     pub globals: HashMap<&'static str, Value>,
     pub frames: Vec<CallFrame>,
     pub jit_enabled: bool,
+    output: &'static mut dyn Write,
 }
 
 impl VM {
-    pub fn new(chunk: Rc<RefCell<Chunk>>) -> VM {
+     pub fn new(chunk: Rc<RefCell<Chunk>>, output: &'static mut dyn Write,) -> Self{
         let mut vm = VM {
             registers: core::array::from_fn(|_| Value::none()),
             chunk,
@@ -113,6 +114,7 @@ impl VM {
             globals: HashMap::new(),
             frames: Vec::new(),
             jit_enabled: true,
+            output,
         };
         vm.globals.insert("input", Value::native(input_native, 0));
         vm.globals
@@ -124,7 +126,7 @@ impl VM {
         vm.globals.insert("len", Value::native(len_native, 1));
         vm
     }
-    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>) -> VM {
+    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>,output: &'static mut dyn Write,) -> Self {
         let mut vm = VM {
             registers: core::array::from_fn(|_| Value::none()),
             chunk,
@@ -132,6 +134,7 @@ impl VM {
             globals: HashMap::new(),
             frames: Vec::new(),
             jit_enabled: false,
+            output
         };
 
         vm.globals.insert("input", Value::native(input_native, 0));
@@ -481,11 +484,10 @@ impl VM {
     }
 
     pub fn print_jit(&mut self, val_slot: usize) {
-        println!("{}", self.registers[val_slot]);
+        writeln!(self.output, "{}", self.registers[val_slot]).unwrap();
     }
 }
-
-type OpHandler = fn(&mut VM, OpCode);
+type OpHandler = for<'vm> fn(&'vm mut VM, OpCode);
 lazy_static! {
     static ref DISPATCH_TABLE: Vec<OpHandler> = {
         let mut table: Vec<OpHandler> = Vec::with_capacity(0x27);
@@ -539,7 +541,7 @@ fn handle_invalid(_vm: &mut VM, _op: OpCode) {
     panic!("Invalid opcode tag 0 encountered");
 }
 
-impl VM {
+impl VM{
     pub fn run(&mut self) -> InterpretResult {
         loop {
             let instr = {
@@ -834,7 +836,7 @@ impl VM {
     pub fn handle_print(&mut self, op: OpCode) {
         if let OpCode::Print(r) = op {
             let b = self.base();
-            println!("{}", self.registers[b + r]);
+            writeln!(self.output, "{}", self.registers[b + r]).unwrap();
         } else {
             unreachable!()
         }

@@ -1,5 +1,5 @@
 // src/main.rs
-use std::{cell::RefCell, env, fs, rc::Rc};
+use std::{cell::RefCell, env, fs, io, rc::Rc};
 #[macro_use]
 extern crate lazy_static;
 
@@ -46,7 +46,7 @@ fn main() {
         std::process::exit(65);
     }
     disassemble_chunk(&*chunk.borrow(), "== Disassembled Bytecode ==");
-    let mut vm = VM::new_interpreter_only(chunk);
+    let mut vm = VM::new_interpreter_only(chunk, Box::leak(Box::new(std::io::stdout())));
 
     match vm.run() {
         InterpretResult::Ok => {}
