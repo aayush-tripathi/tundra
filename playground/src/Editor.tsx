@@ -3,10 +3,7 @@ import { useCallback } from "react";
 import MonacoEditor, { Monaco } from "@monaco-editor/react";
 
 const registerTundra = (monaco: Monaco) => {
-/*──────────────── 1.  Register the language ────────────────*/
 monaco.languages.register({ id: "tundra" });
-
-/*──────────────── 2.  Tokenizer (Monarch) ───────────────────*/
 monaco.languages.setMonarchTokensProvider("tundra", {
   tokenizer: {
     root: [
@@ -15,31 +12,26 @@ monaco.languages.setMonarchTokensProvider("tundra", {
       [/'[^']*'/, "string"],                   // single-quoted strings
       [/\b(var|fun|class|for|while|if|else|return|print)\b/, "keyword"],
       [/[\+\-\*\/%]|\*\*|==|!=|<=|>=|<|>/, "operator"],
-      [/[{}\(\)\[\]:]/, "@brackets"],          // include colon as bracket
+      [/[{}\(\)\[\]:]/, "@brackets"],          
       [/[a-zA-Z_]\w*/, "identifier"],
       [/#.*$/, "comment"],
     ],
   },
 });
 
-/*──────────────── 3.  Language configuration for indentation ────────────*/
 monaco.languages.setLanguageConfiguration("tundra", {
   indentationRules: {
-    // Increase indent after lines ending with ':'
     increaseIndentPattern: /^\s*(if|while|for|fun|class|else)\b.*:\s*$/,
-    // Decrease indent for lines starting with 'else'
     decreaseIndentPattern: /^\s*(else)\b.*$/,
   },
   onEnterRules: [
     {
-      // After a line ending with ':', increase indent
       beforeText: /^\s*(if|while|for|fun|class|else)\b.*:\s*$/,
       action: {
         indentAction: monaco.languages.IndentAction.Indent,
       },
     },
     {
-      // For 'else' statements, align with the corresponding 'if'
       beforeText: /^\s*else\s*:\s*$/,
       action: {
         indentAction: monaco.languages.IndentAction.Outdent,
@@ -52,7 +44,7 @@ monaco.languages.setLanguageConfiguration("tundra", {
   ],
 });
 
-/*──────────────── 4.  Snippet-style completions ─────────────*/
+
 monaco.languages.registerCompletionItemProvider("tundra", {
   provideCompletionItems: (model, position) => {
     const word = model.getWordUntilPosition(position);
@@ -144,7 +136,6 @@ monaco.languages.registerCompletionItemProvider("tundra", {
   },
 });
 
-/*──────────────── 5.  (Optional) turn off the default JS/TS diagnostics ──*/
 monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
   noSemanticValidation: true,
   noSyntaxValidation: true,
@@ -157,7 +148,7 @@ interface Props {
 }
 
 export const Editor = ({ code, setCode }: Props) => {
-  // run once, before the editor mounts
+
   const handleBeforeMount = useCallback((monaco: Monaco) => {
     registerTundra(monaco);
   }, []);

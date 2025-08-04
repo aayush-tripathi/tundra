@@ -47,7 +47,7 @@ pub enum OpCode {
 }
 
 impl OpCode {
-    /// A compact numeric tag for each variant (useful for a real byte-buffer backend)
+    /// A compact numeric tag for each variant 
     pub fn tag(&self) -> u8 {
         match self {
             OpCode::LoadConstant(_, _) => 0x01,
@@ -91,7 +91,7 @@ impl OpCode {
             OpCode::IncLoopIfLess(_, _, _) => 0x27,
         }
     }
-    ///Convert to bytes (For Debugging)
+    ///Convert to bytes 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![self.tag()];
         match self {

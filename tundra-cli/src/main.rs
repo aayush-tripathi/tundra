@@ -35,7 +35,7 @@ fn main() {
         }
     };
 
-    // 1) Compile
+    // Compile
     let chunk = Rc::new(RefCell::new(Chunk::new()));
     let mut compiler = Compiler::new(chunk.clone());
     if !compiler.compile(&source) {
@@ -43,13 +43,13 @@ fn main() {
         process::exit(1);
     }
 
-    // Optional bytecode dump
+    //  bytecode dump
     let debug = args.any(|a| a == "--debug");
     if debug {
         disassemble_chunk(&chunk.borrow(), &format!("== {} ==", script));
     }
 
-    // 2) Run with **interpreter only** (no JIT)
+    // interpreter only run
     let mut vm = VM::new_interpreter_only(chunk, Box::leak(Box::new(std::io::stdout())));
     match vm.run() {
         InterpretResult::Ok => {}

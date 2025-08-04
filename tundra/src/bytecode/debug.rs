@@ -2,7 +2,7 @@
 
 use crate::bytecode::chunk::Chunk;
 
-/// A one‐pass disassembler: we print each instruction via its Debug impl.
+/// A one‐pass disassembler
 pub fn disassemble_chunk(chunk: &Chunk, name: &str) {
     println!("== {} ==", name);
     for (offset, instr) in chunk.code.iter().enumerate() {

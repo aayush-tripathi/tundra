@@ -4,7 +4,7 @@ use super::vm::{JIT_CTX, VM};
 use crate::bytecode::value::{Value, ValueType};
 use std::panic;
 
-/// Integer exponentiation for JIT’d code.
+/// Integer exponentiation 
 #[no_mangle]
 pub extern "C" fn tundra_pow_i64(base: i64, exp: i64) -> i64 {
     if exp < 0 {
@@ -52,9 +52,7 @@ pub extern "C" fn tundra_invoke(vm_ptr: i64, base: i64, callee_slot: i64, argc: 
 #[no_mangle]
 pub extern "C" fn tundra_new_array(vm_ptr: i64, length: i64) -> i64 {
     let vm = unsafe { &mut *(vm_ptr as *mut VM) };
-    // allocate in VM, get the register slot:
     let slot = vm.new_array_jit(length as usize);
-    // read it back and return its tagged pointer
     vm.registers[slot].as_i64()
 }
 /// Array read:
@@ -108,7 +106,6 @@ pub extern "C" fn tundra_set_global(vm_ptr: *mut VM, name_ptr: *const u8, len: i
 
     vm.globals.insert(name, unsafe { Value::from_i64(raw) });
 }
-/// Generic adapter: forwards (vm_ptr, base, argv, argc) to a JIT stub
 
 #[no_mangle]
 pub unsafe extern "C" fn tundra_apply_variadic(
@@ -139,7 +136,7 @@ pub unsafe extern "C" fn tundra_apply_variadic(
         _ => panic!(">4-arg call not yet wired up in tundra_apply_variadic"),
     }
 }
-/// Like `tundra_invoke`, but takes the untagged arg
+
 #[no_mangle]
 pub extern "C" fn tundra_call_raw(vm_ptr: i64, base: i64, callee: i64, raw_arg: i64) -> i64 {
     let vm = unsafe { &mut *(vm_ptr as *mut VM) };
