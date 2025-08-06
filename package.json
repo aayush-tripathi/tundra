@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "lucide-react": "^0.536.0",
+    "react-resizable-panels": "^3.0.4"
+  }
+}
