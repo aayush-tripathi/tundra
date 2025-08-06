@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Editor } from "./Editor";
 import { exec } from "./api";
+import { Analytics } from "@vercel/analytics/react"
 import "./styles.css";
 
 import {
@@ -77,6 +78,7 @@ export default function App() {
           </div>
         </Panel>
       </PanelGroup>
+      <Analytics />
     </div>
   );
 }
