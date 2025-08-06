@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 use tundra::run;
+use tower_http::cors::AllowOrigin;
 
 #[derive(Deserialize)]
 struct ExecReq {
@@ -22,17 +23,17 @@ struct ExecResp {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let origins = [
+    static ALLOWED: &[&str] = &[
         "https://thetundralanguage.vercel.app",
         "http://localhost:5173",
     ];
+
+    let allow_origins = AllowOrigin::predicate(|origin: &HeaderValue, _req_head| {
+        ALLOWED.iter().any(|&o| origin == o)
+    });
+
     let cors = CorsLayer::new()
-        .allow_origin(
-            origins
-                .into_iter()
-                .map(|o| HeaderValue::from_static(o))
-                .collect::<Vec<_>>(),
-        )
+        .allow_origin(allow_origins)
         .allow_methods([Method::POST])
         .allow_headers(Any);
     let app = Router::new()
