@@ -17,15 +17,19 @@ lazy_static! {
 
 fn read_source() -> String {
     let demo = r#"
-var n = 1000 
-var a = 0 
-var b = 1
-for i in range(n):
-    var temp = a
-    a = (a+b)%(10**9+7)
-    b = temp 
-print(a)
+var a = [4,7,10,11,-1,5]
+fun bubbleSort(a):
+    var n = 6
+    for i in range(n):
+        for j in range(n-i-1):
+            if (a[j]>a[j+1]):
+                var temp= a[j+1]
+                a[j+1]=a[j]
+                a[j]=temp
 
+bubbleSort(a)
+for i in range(6):
+    print(a[i])
 
 "#;
     demo.to_string()
