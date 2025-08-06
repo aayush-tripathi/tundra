@@ -1,0 +1,11 @@
+# Render blueprint
+services:
+  - type: web
+    name: executor          
+    env: docker
+    plan: free              
+    dockerfilePath: exec.Dockerfile
+    autoDeploy: true        
+    envVars:
+      - key: PORT           
+        value: 8080         
