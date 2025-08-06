@@ -9,6 +9,6 @@
     }
   ],
   "env": {
-    "VITE_EXECUTOR_URL": "https://REPLACE-ME.onrender.com"
+    "VITE_EXECUTOR_URL": "https://tundra-a7ea.onrender.com"
   }
 }
