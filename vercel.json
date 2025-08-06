@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "name": "tundra-playground",
+  "builds": [
+    {
+      "src": "playground/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "playground/dist" }
+    }
+  ],
+  "env": {
+    "VITE_EXECUTOR_URL": "https://REPLACE-ME.onrender.com"
+  }
+}
