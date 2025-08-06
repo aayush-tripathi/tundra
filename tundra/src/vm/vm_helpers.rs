@@ -4,7 +4,7 @@ use super::vm::{JIT_CTX, VM};
 use crate::bytecode::value::{Value, ValueType};
 use std::panic;
 
-/// Integer exponentiation 
+/// Integer exponentiation
 #[no_mangle]
 pub extern "C" fn tundra_pow_i64(base: i64, exp: i64) -> i64 {
     if exp < 0 {

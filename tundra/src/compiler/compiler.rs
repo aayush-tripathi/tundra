@@ -631,7 +631,7 @@ impl Compiler {
         let rhs = self.parse_precedence(Precedence::Unary);
         match op {
             TokenType::Minus => self.emit_negate(rhs, rhs),
-            TokenType::Bang|TokenType::Not => {
+            TokenType::Bang | TokenType::Not => {
                 let tmp = self.register_allocator.allocate(Value::none()).unwrap();
                 let zero = self.register_allocator.allocate(Value::none()).unwrap();
                 self.emit_load_constant(zero, Value::boolean(false));
@@ -913,8 +913,8 @@ impl Compiler {
             TokenType::GreaterEqual => self.emit_greater_equal(res, lhs_reg, rhs_reg),
             TokenType::Less => self.emit_less(res, lhs_reg, rhs_reg),
             TokenType::LessEqual => self.emit_less_equal(res, lhs_reg, rhs_reg),
-            TokenType::And =>  self.emit_bitwise_and(res, lhs_reg, rhs_reg),
-            TokenType::Or =>  self.emit_bitwise_or(res, lhs_reg, rhs_reg),
+            TokenType::And => self.emit_bitwise_and(res, lhs_reg, rhs_reg),
+            TokenType::Or => self.emit_bitwise_or(res, lhs_reg, rhs_reg),
             _ => unreachable!("binary() got {:?}", op),
         };
 

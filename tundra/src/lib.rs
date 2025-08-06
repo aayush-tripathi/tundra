@@ -5,16 +5,13 @@ pub mod jit;
 pub mod lexer;
 pub mod vm;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-use anyhow::{anyhow, Result};
 pub use crate::vm::interpretresult::InterpretResult;
 use crate::{
-    bytecode::chunk::Chunk,
-    compiler::compiler::Compiler,
-    lexer::scanner::Scanner,
-    vm::vm::VM,
+    bytecode::chunk::Chunk, compiler::compiler::Compiler, lexer::scanner::Scanner, vm::vm::VM,
 };
+use anyhow::{anyhow, Result};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 /// A custom Write implementation that captures output to a shared buffer
 struct OutputCapture {
@@ -32,7 +29,7 @@ impl std::io::Write for OutputCapture {
         self.buffer.borrow_mut().extend_from_slice(buf);
         Ok(buf.len())
     }
-    
+
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
@@ -41,10 +38,10 @@ impl std::io::Write for OutputCapture {
 pub fn run(src: &str) -> Result<String> {
     //  a shared buffer for capturing output
     let output_buffer = Rc::new(RefCell::new(Vec::<u8>::new()));
-    
+
     let output_capture = Box::new(OutputCapture::new(output_buffer.clone()));
     let output_ref: &'static mut dyn std::io::Write = Box::leak(output_capture);
-    
+
     // ---------- compile ----------
     let _tokens = Scanner::new(src.to_string()).scan_tokens();
     let chunk = Rc::new(RefCell::new(Chunk::new()));

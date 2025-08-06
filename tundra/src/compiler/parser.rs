@@ -175,9 +175,9 @@ pub fn get_rule(token: TokenType) -> ParseRule {
         TokenType::None => ParseRule::prefix(Compiler::literal_none, Primary),
         Identifier => ParseRule::prefix(Compiler::variable, Primary),
 
-        Not       => ParseRule::prefix(Compiler::unary, Unary),
-        TokenType::And       => ParseRule::infix (Compiler::binary, Precedence::And),
-        TokenType::Or        => ParseRule::infix (Compiler::binary, Precedence::Or),
+        Not => ParseRule::prefix(Compiler::unary, Unary),
+        TokenType::And => ParseRule::infix(Compiler::binary, Precedence::And),
+        TokenType::Or => ParseRule::infix(Compiler::binary, Precedence::Or),
 
         _ => ParseRule::neither(),
     }

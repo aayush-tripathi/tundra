@@ -106,7 +106,7 @@ pub struct VM {
 }
 
 impl VM {
-     pub fn new(chunk: Rc<RefCell<Chunk>>, output: &'static mut dyn Write,) -> Self{
+    pub fn new(chunk: Rc<RefCell<Chunk>>, output: &'static mut dyn Write) -> Self {
         let mut vm = VM {
             registers: core::array::from_fn(|_| Value::none()),
             chunk,
@@ -126,7 +126,7 @@ impl VM {
         vm.globals.insert("len", Value::native(len_native, 1));
         vm
     }
-    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>,output: &'static mut dyn Write,) -> Self {
+    pub fn new_interpreter_only(chunk: Rc<RefCell<Chunk>>, output: &'static mut dyn Write) -> Self {
         let mut vm = VM {
             registers: core::array::from_fn(|_| Value::none()),
             chunk,
@@ -134,7 +134,7 @@ impl VM {
             globals: HashMap::new(),
             frames: Vec::new(),
             jit_enabled: false,
-            output
+            output,
         };
 
         vm.globals.insert("input", Value::native(input_native, 0));
@@ -328,7 +328,7 @@ impl VM {
     fn bitwise_not(&self, value: &Value) -> Value {
         match value.value {
             ValueType::Int(v) => Value::int(!v),
-            ValueType::Bool(v)=> Value::boolean(!v),
+            ValueType::Bool(v) => Value::boolean(!v),
             _ => panic!("Invalid type for BitwiseNot operation"),
         }
     }
@@ -541,7 +541,7 @@ fn handle_invalid(_vm: &mut VM, _op: OpCode) {
     panic!("Invalid opcode tag 0 encountered");
 }
 
-impl VM{
+impl VM {
     pub fn run(&mut self) -> InterpretResult {
         loop {
             let instr = {

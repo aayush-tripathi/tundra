@@ -19,7 +19,6 @@ pub struct Value {
     pub value: ValueType,
 }
 
-
 pub const TAG_BITS: u64 = 0b111;
 pub const TAG_PTR: u64 = 0b000;
 pub const TAG_INT: u64 = 0b001;
@@ -142,7 +141,6 @@ impl Value {
     /// loss-less, type-preserving packing into a single register
     pub fn as_i64(&self) -> i64 {
         match &self.value {
-        
             ValueType::Int(i) => ((*i as u64) << 3 | TAG_INT) as i64,
             ValueType::Bool(false) => TAG_BOOL as i64,
             ValueType::Bool(true) => (1u64 << 3 | TAG_BOOL) as i64,
@@ -209,7 +207,7 @@ impl Value {
             }
             ValueType::Char(c) => {
                 let mut b = vec![0x05]; // Char tag
-                b.extend(&(*c as u32).to_le_bytes()); 
+                b.extend(&(*c as u32).to_le_bytes());
                 b
             }
             ValueType::String(s) => {

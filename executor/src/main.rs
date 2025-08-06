@@ -1,6 +1,7 @@
-use axum::{extract::State,http::Method, routing::post, Json, Router};
-use axum::response::IntoResponse;
 use axum::middleware::from_fn;
+use axum::response::IntoResponse;
+use axum::{extract::State, http::Method, routing::post, Json, Router};
+use http::HeaderValue;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -21,8 +22,17 @@ struct ExecResp {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let origins = [
+        "https://thetundralanguage.vercel.app",
+        "http://localhost:5173",
+    ];
     let cors = CorsLayer::new()
-        .allow_origin("http://localhost:5173".parse::<http::HeaderValue>()?)
+        .allow_origin(
+            origins
+                .into_iter()
+                .map(|o| HeaderValue::from_static(o))
+                .collect::<Vec<_>>(),
+        )
         .allow_methods([Method::POST])
         .allow_headers(Any);
     let app = Router::new()
@@ -32,18 +42,21 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
     println!(" executor listening on http://{addr}");
-    
+
     let listener = TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }
 
-async fn exec(
-    State(_): State<Arc<()>>,
-    Json(req): Json<ExecReq>,
-) -> Json<ExecResp> {
+async fn exec(State(_): State<Arc<()>>, Json(req): Json<ExecReq>) -> Json<ExecResp> {
     match run(&req.code) {
-        Ok(out) => Json(ExecResp { stdout: out, stderr: String::new() }),
-        Err(e) => Json(ExecResp { stdout: String::new(), stderr: e.to_string() }),
+        Ok(out) => Json(ExecResp {
+            stdout: out,
+            stderr: String::new(),
+        }),
+        Err(e) => Json(ExecResp {
+            stdout: String::new(),
+            stderr: e.to_string(),
+        }),
     }
 }
