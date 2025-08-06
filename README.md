@@ -29,7 +29,11 @@ print(fib(10))
 
 ## Getting Started
 
-To build and run your first Tundra program:
+To build and run your first Tundra program: 
+
+[Visit the official playground](https://thetundralanguage.vercel.app/) to run code online
+
+OR
 
 1. Clone the repository:
 
