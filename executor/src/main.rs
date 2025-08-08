@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tower_http::cors::AllowOrigin;
 use tower_http::cors::{Any, CorsLayer};
 use tundra::run;
-use tower_http::cors::AllowOrigin;
 
 #[derive(Deserialize)]
 struct ExecReq {
@@ -21,6 +21,11 @@ struct ExecResp {
     stderr: String,
 }
 
+#[derive(Serialize)]
+struct DisasmResp {
+    bytecode: String,
+    stderr: String,
+}
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     static ALLOWED: &[&str] = &[
@@ -38,6 +43,7 @@ async fn main() -> anyhow::Result<()> {
         .allow_headers(Any);
     let app = Router::new()
         .route("/execute", post(exec))
+        .route("/disassemble", post(disassemble))
         .layer(cors)
         .with_state(Arc::new(()));
 
@@ -57,6 +63,18 @@ async fn exec(State(_): State<Arc<()>>, Json(req): Json<ExecReq>) -> Json<ExecRe
         }),
         Err(e) => Json(ExecResp {
             stdout: String::new(),
+            stderr: e.to_string(),
+        }),
+    }
+}
+async fn disassemble(State(_): State<Arc<()>>, Json(req): Json<ExecReq>) -> Json<DisasmResp> {
+    match tundra::disassemble(&req.code) {
+        Ok(bc) => Json(DisasmResp {
+            bytecode: bc,
+            stderr: String::new(),
+        }),
+        Err(e) => Json(DisasmResp {
+            bytecode: String::new(),
             stderr: e.to_string(),
         }),
     }

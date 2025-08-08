@@ -31,8 +31,8 @@ body {
 }
 
 .logo {
-  height: 5rem;        /* tweak size */
-  margin-right: 0.75rem; /* space before the title */
+  height: 6rem;      
+  margin-right: 0.75rem; 
 }
 .run-button {
   display: flex;
@@ -57,3 +57,31 @@ body {
   border-color: #666;
   cursor: not-allowed;
 }
+.wiki-button {
+  border: 1px solid #1b839e;
+  background: #1b839e;
+  color: #c9d1d9;
+  padding: 6px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+.wiki-button:hover { background: #0d6179; }
+
+.run-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #238636;
+  background: #238636;
+  color: #c9d1d9;
+  margin-right: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.run-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.resize-handle { display: flex; align-items: center; justify-content: center; }
+.resize-handle.vertical { width: 6px; cursor: col-resize; }
+.resize-handle-bar { width: 60%; height: 2px; background: #30363d; border-radius: 2px; }
